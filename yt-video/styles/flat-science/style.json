@@ -1,0 +1,58 @@
+{
+  "name": "flat-science",
+  "label": "Flat-vector science (Kurzgesagt-inspired)",
+  "inspired_by": "flat vector science explainers: saturated colours on deep gradients, soft geometric shapes, slow parallax drift, calm narration",
+  "colors": {
+    "bg": "#1B1446",
+    "bg2": "#3A1F6E",
+    "ink": "#FFFFFF",
+    "muted": "#B6A9E0",
+    "accent": "#FFB23F",
+    "accent2": "#FF5D8F",
+    "accent3": "#3FD0C9",
+    "accent4": "#7B6CFF",
+    "card": "#2B2160",
+    "cardInk": "#FFFFFF",
+    "line": "#FFFFFF"
+  },
+  "fonts": {
+    "display": "Nunito",
+    "body": "Nunito",
+    "mono": "JetBrains Mono"
+  },
+  "weights": {
+    "display": 900,
+    "body": 800
+  },
+  "captions": {
+    "mode": "minimal",
+    "font": "display",
+    "size": 58,
+    "y": 1330,
+    "weight": 800,
+    "color": "ink",
+    "active": "accent",
+    "stroke": "bg",
+    "strokeWidth": 0
+  },
+  "transition": "drift",
+  "background": {
+    "kind": "gradient",
+    "vignette": 0.35,
+    "grain": 0.03
+  },
+  "motion": {
+    "ease": "cubic",
+    "spring": [
+      10,
+      0.9
+    ]
+  },
+  "music": {
+    "mood": "cinematic",
+    "bpm": 90
+  },
+  "sfx": {
+    "enabled": true
+  }
+}

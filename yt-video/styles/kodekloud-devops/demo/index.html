@@ -1,0 +1,189 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>What is a Kubernetes Pod?</title>
+<link rel="stylesheet" href="style.css">
+<style>
+html,body{margin:0;background:#111;overflow:hidden}
+#wrap{position:absolute;left:0;top:0;transform-origin:0 0}
+#stage{position:relative;overflow:hidden;background:var(--bg);color:var(--ink);font-family:var(--font-body);font-weight:var(--w-body);-webkit-font-smoothing:antialiased}
+#bg,#grain{position:absolute;left:0;top:0;width:100%;height:100%}
+#grain{mix-blend-mode:overlay;pointer-events:none;z-index:40}
+.scene{position:absolute;left:0;top:0;width:100%;height:100%;display:none}
+.a{position:absolute;white-space:nowrap}
+#captions{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:30}
+.cap-page{font-family:var(--cap-font);-webkit-text-stroke:var(--cap-stroke-w) var(--cap-stroke);paint-order:stroke fill}
+.cap-w{margin:0 0.04em}
+#safe{display:none;position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:60}
+html.safe #safe{display:block}
+#safe div{position:absolute;background:rgba(255,0,40,.25);outline:2px dashed rgba(255,0,40,.8)}
+
+/* KodeKloud-like cartoon kit: thick navy outlines, flat fills, chunky rounded corners, hard offset shadow */
+.card{position:absolute;box-sizing:border-box;border:5px solid var(--line);border-radius:26px;background:var(--card);box-shadow:8px 8px 0 var(--line)}
+.tag{position:absolute;padding:6px 20px;border:5px solid var(--line);border-radius:999px;font-weight:900;font-size:36px;background:var(--accent4);color:var(--ink)}
+.icon{display:block}
+#term{background:var(--term);color:#E2E8F0;font-family:var(--font-mono);font-size:34px}
+#term .bar{position:absolute;left:24px;top:20px;display:flex;gap:12px}
+#term .bar i{width:18px;height:18px;border-radius:50%;display:block}
+#termLine{position:absolute;left:28px;top:70px}
+#termLine b{color:var(--accent3);font-weight:700}
+.ctr{width:220px;height:220px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;font-weight:900;font-size:40px}
+.pod{border-style:dashed;background:#DBEAFE;box-shadow:none}
+.node{background:#FFFFFF}
+.node .nlab{position:absolute;left:24px;top:-30px;font-size:36px;font-weight:900;background:var(--card);padding:0 14px;border:5px solid var(--line);border-radius:14px}
+.badge{position:absolute;width:84px;height:84px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:5px solid var(--line)}
+#ui{position:fixed;left:0;right:0;bottom:0;height:56px;display:flex;gap:12px;align-items:center;padding:0 16px;background:#1d1d22;color:#ddd;font:14px system-ui;z-index:100}
+#ui input[type=range]{flex:1}
+#ui button{font:inherit;padding:6px 14px;border-radius:6px;border:0;background:#3a3a44;color:#fff}
+html.render #ui{display:none}
+</style>
+</head>
+<body>
+<div id="wrap"><div id="stage">
+  <canvas id="bg"></canvas>
+  <div id="world" class="a" style="left:0;top:0;width:100%;height:100%">
+    <div class="card" id="term"><div class="bar"><i style="background:#F87171"></i><i style="background:#FBBF24"></i><i style="background:#34D399"></i></div><div id="termLine"></div></div>
+    <div class="card node" id="node1"><div class="nlab">Node 1</div></div>
+    <div class="card node" id="node2"><div class="nlab">Node 2</div></div>
+    <svg class="a" id="wire" style="left:0;top:0;overflow:visible">
+      <path id="wirePath" fill="none" stroke-width="6" stroke-dasharray="14 12" stroke-linecap="round"/>
+      <g id="packets"></g>
+      <!-- the volume is drawn around (0,0) and moved into place per frame -->
+      <g id="vol"><ellipse cx="0" cy="-50" rx="110" ry="30" stroke-width="5"/><path d="M-110 -50 V50 A110 30 0 0 0 110 50 V-50" stroke-width="5"/><ellipse cx="0" cy="-50" rx="110" ry="30" stroke-width="5"/>
+        <text id="volLab" x="0" y="20" text-anchor="middle" font-size="34" font-weight="900">volume</text></g>
+    </svg>
+    <div id="podA" class="a"></div>
+    <div id="podB" class="a"></div>
+  </div>
+  <section class="scene" id="sc-hook"></section><section class="scene" id="sc-pod"></section><section class="scene" id="sc-share"></section>
+  <section class="scene" id="sc-node"></section><section class="scene" id="sc-heal"></section>
+  <div id="captions"></div>
+  <canvas id="grain"></canvas>
+  <div id="safe"></div>
+</div></div>
+<div id="ui"><button id="play">Play</button><input id="scrub" type="range" min="0" max="1000" value="0"><span id="time">0.00</span><label><input id="safeT" type="checkbox"> safe zone</label></div>
+
+<script src="timeline.js"></script>
+<script src="style.js"></script>
+<script src="kit.js"></script>
+<script>
+/* BEAT SHEET (one persistent world: objects pop, move and morph; nothing cuts)
+   hook   terminal types "kubectl run web --image=nginx" from frame 0; the web container pops in on "container"
+   pod    a dashed Pod box springs open around it on "pod", yellow "Pod" tag
+   share  pod widens + "logger" sidecar slides in on "containers"; IP badge on "IP"; volume + flowing packets on "storage"
+   node   Node 1 / Node 2 pop in; the pod shrinks and flies into Node 2 on "places"
+   heal   pod goes red with an X on "crashes" and drops away; a fresh pod pops into Node 1 with a green check on "fresh"
+   Illustrative: the IP 10.0.0.7 and the names web/logger are example values. */
+const C = K.C;
+document.documentElement.classList.toggle('render', K.RENDER);
+document.documentElement.classList.toggle('safe', /[?&]safe\b/.test(location.search));
+const BOX = ['M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z', 'm3.3 7 8.7 5 8.7-5', 'M12 22V12'];   // Lucide "box" (ISC)
+const icon = (paths, size, col, sw = 2.4) => `<svg class="icon" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${col}" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round">${paths.map(d => `<path d="${d}"/>`).join('')}</svg>`;
+const CHECK = ['M20 6 9 17l-5-5'], XS = ['M18 6 6 18', 'M6 6l12 12'];
+K.st('stage', { width: K.W + 'px', height: K.H + 'px' });
+K.$('wire').setAttribute('width', K.W); K.$('wire').setAttribute('height', K.H);
+K.safeOverlay(K.$('safe'));
+// LAYOUT per format: 9:16 stacks terminal / pod / volume / nodes; 16:9 keeps the pod left and the nodes on the right
+const L = K.layout({
+  short: { term: [100, 330, 780, 150], pod: [500, 760], vol: [500, 1130], wire: 'M500 930 L500 1050',
+           node1: [70, 900, 420, 340], node2: [520, 900, 420, 340], podInNode2: [730, 1085], podInNode1: [280, 1085], podScale: 0.6 },
+  long:  { term: [120, 90, 820, 140], pod: [560, 540], vol: [560, 900], wire: 'M560 715 L560 820',
+           node1: [1000, 370, 400, 340], node2: [1420, 370, 400, 340], podInNode2: [1620, 555], podInNode1: [1200, 555], podScale: 0.6 },
+});
+const box = ([left, top, width, height]) => ({ left, top, width, height });
+K.place({ term: box(L.term), node1: box(L.node1), node2: box(L.node2) });
+K.$('wirePath').setAttribute('d', L.wire);
+
+// a pod = dashed box + tag + two container cards + IP badge (built once per pod, positioned per frame)
+function makePod(root) {
+  root.innerHTML = `<div class="card pod" data-k="box" style="left:0;top:0"></div>
+    <div class="tag" data-k="tag">Pod</div>
+    <div class="card ctr" data-k="c1">${icon(BOX, 96, C.accent)}<span>web</span></div>
+    <div class="card ctr" data-k="c2">${icon(BOX, 96, C.accent2)}<span>logger</span></div>
+    <div class="tag" data-k="ip" style="background:var(--card);font-family:var(--font-mono);font-size:32px">IP 10.0.0.7</div>
+    <div class="badge" data-k="badge"></div>`;
+  const q = k => root.querySelector(`[data-k="${k}"]`);
+  return { root, box: q('box'), tag: q('tag'), c1: q('c1'), c2: q('c2'), ip: q('ip'), badge: q('badge') };
+}
+const A = makePod(K.$('podA')), B = makePod(K.$('podB'));
+B.ip.style.display = 'none';
+const pop = (t, t0, w = 16, z = 0.55) => K.spring(t - t0, w, z);   // springy pop with overshoot (this style allows it)
+
+// draw a pod centred at (x,y) with scale s. p: {pod 0..1, wide 0..1, ip 0..1, cont 0..1, red 0..1, x 0..1, check 0..1, out 0..1}
+function drawPod(P, x, y, s, p) {
+  const W = K.lerp(360, 640, p.wide), H = 340;
+  K.st(P.root, { left: x + 'px', top: y + 'px', transform: `scale(${(s * (1 - 0.6 * p.out)).toFixed(4)}) translateY(${(p.out * 260).toFixed(1)}px)`, opacity: (1 - p.out).toFixed(3), display: p.cont <= 0.001 || p.out >= 0.999 ? 'none' : '' });
+  K.st(P.box, { left: (-W / 2) + 'px', top: (-H / 2) + 'px', width: W + 'px', height: H + 'px', transform: `scale(${Math.max(0, p.pod).toFixed(4)})`, display: p.pod <= 0.001 ? 'none' : '',
+    background: K.mix('#DBEAFE', '#FECACA', p.red), borderColor: K.mix(C.line, '#DC2626', p.red) });
+  K.st(P.tag, { left: (-W / 2 + 18) + 'px', top: (-H / 2 - 34) + 'px', transform: `scale(${Math.max(0, p.pod).toFixed(4)})`, display: p.pod <= 0.001 ? 'none' : '' });
+  const cx1 = K.lerp(0, -150, p.wide);
+  K.st(P.c1, { left: (cx1 - 110) + 'px', top: '-110px', transform: `scale(${Math.max(0, p.cont).toFixed(4)})` });
+  K.st(P.c2, { left: (150 - 110 + (1 - p.wide) * 260) + 'px', top: '-110px', opacity: K.clamp(p.wide * 1.6).toFixed(3), display: p.wide <= 0.01 ? 'none' : '' });
+  K.st(P.ip, { left: (W / 2 - 230) + 'px', top: (-H / 2 - 34) + 'px', transform: `scale(${Math.max(0, p.ip).toFixed(4)})`, display: p.ip <= 0.001 ? 'none' : '' });
+  const bShow = Math.max(p.x, p.check);
+  if (P.badge._kind !== (p.check > 0 ? 'ok' : 'x')) { P.badge.innerHTML = p.check > 0 ? icon(CHECK, 52, '#fff', 4) : icon(XS, 52, '#fff', 4); P.badge._kind = p.check > 0 ? 'ok' : 'x'; }
+  K.st(P.badge, { left: (W / 2 - 56) + 'px', top: (-H / 2 - 46) + 'px', background: p.check > 0 ? C.accent3 : '#DC2626', transform: `scale(${Math.max(0, bShow).toFixed(4)})`, display: bShow <= 0.001 ? 'none' : '' });
+}
+
+const CMD = 'kubectl run web --image=nginx';
+function world(t) {
+  const tCont = K.cue('hook', 'container'), tPod = K.cue('pod', 'pod'), tC2 = K.cue('share', 'containers'), tIp = K.cue('share', 'ip'),
+        tSt = K.cue('share', 'storage'), nd = K.scene('node'), tNode = K.cue('node', 'places'), tCr = K.cue('heal', 'crashes'), tFr = K.cue('heal', 'fresh');
+  // terminal: already typing at frame 0, caret blinks
+  const typed = K.typed(CMD, t, -0.4, 24), caret = Math.floor(t * 2.4) % 2 === 0 ? '▍' : ' ';
+  const html = `<b>$</b> ${typed}${caret}`;
+  if (K.$('termLine')._h !== html) { K.$('termLine').innerHTML = html; K.$('termLine')._h = html; }
+  const tin = pop(t, -0.3, 14, 0.7);
+  K.st('term', { transform: `scale(${(0.9 + 0.1 * tin).toFixed(4)})`, opacity: K.clamp(tin * 2).toFixed(3) });
+  // nodes pop in at the start of the node scene
+  ['node1', 'node2'].forEach((id, i) => { const k = pop(t, nd.start + 0.05 + i * 0.12); K.st(id, { transform: `scale(${Math.max(0, k).toFixed(4)})`, display: k <= 0.001 ? 'none' : '' }); });
+  // pod A: from its own spot into Node 2 at 60% size on "places"
+  const fly = K.spring(t - tNode + 0.1, 11, 0.8);
+  const ax = K.lerp(L.pod[0], L.podInNode2[0], fly), ay = K.lerp(L.pod[1], L.podInNode2[1], fly), as = K.lerp(1, L.podScale, fly);
+  drawPod(A, ax, ay, as, { cont: pop(t, tCont - 0.1), pod: pop(t, tPod - 0.05, 14, 0.6), wide: K.spring(t - tC2, 13, 0.75), ip: pop(t, tIp - 0.05) * (1 - K.seg(t, tNode - 0.1, tNode + 0.2)),
+    red: K.seg(t, tCr - 0.05, tCr + 0.2), x: pop(t, tCr), check: 0, out: K.ei(K.seg(t, Math.max(tCr + 0.6, tFr - 0.35), Math.max(tCr + 1.2, tFr + 0.25))) });   // falls as the fresh pod lands
+  // pod B: the fresh replacement in Node 1
+  const nb = pop(t, tFr - 0.05);
+  drawPod(B, L.podInNode1[0], L.podInNode1[1], L.podScale, { cont: nb, pod: nb, wide: t >= tFr - 0.05 ? 1 : 0, ip: 0, red: 0, x: 0, check: pop(t, tFr + 0.35), out: 0 });
+  // volume + dashed wire with packets, only during "share"
+  const vIn = pop(t, tSt - 0.05), vOut = K.seg(t, nd.start - 0.1, nd.start + 0.2);
+  const vs = Math.max(0, vIn) * (1 - vOut);
+  K.st('vol', { transform: `translate(${L.vol[0]}px,${L.vol[1]}px) scale(${vs.toFixed(4)})`, display: vs <= 0.001 ? 'none' : '', fill: C.card, stroke: C.line });
+  K.st('volLab', { opacity: vs > 0.5 ? (1 - vOut).toFixed(3) : '0', fill: C.ink, display: vs <= 0.001 ? 'none' : '' });
+  K.st('wirePath', { stroke: C.line, opacity: K.clamp(vIn * 2 * (1 - vOut)).toFixed(3) });
+  const pk = K.$('packets'); while (pk.children.length < 3) K.svg('circle', { r: 12, fill: C.accent2, stroke: C.line, 'stroke-width': 4 }, pk);
+  const pts = vs > 0.5 ? K.flow(K.$('wirePath'), t, { n: 3, speed: 0.9, t0: tSt }) : [];
+  [...pk.children].forEach((c, i) => { const p = pts[i]; if (!p) { c.style.display = 'none'; return; } c.style.display = ''; c.setAttribute('cx', p.x.toFixed(1)); c.setAttribute('cy', p.y.toFixed(1)); c.style.opacity = (p.o * (1 - vOut)).toFixed(3); });
+}
+
+K.background(K.$('bg'));
+const grain = K.grain(K.$('grain'));
+const caps = K.captions(K.$('captions'));
+const scenes = K.runScenes({});
+window.VIDEO = { w: K.W, h: K.H, duration: K.TL.duration, fps: K.TL.fps };
+window.seek = t => { t = K.clamp(t, 0, VIDEO.duration); scenes(t); world(t); caps(t); grain(t); };
+seek(0);
+
+/* PREVIEW-START */
+if (!K.RENDER) {
+  const wrap = document.getElementById('wrap');
+  const fit = () => { const s = Math.min(innerWidth / K.W, (innerHeight - 56) / K.H); wrap.style.transform = `translate(${(innerWidth - K.W * s) / 2}px,0) scale(${s})`; };
+  addEventListener('resize', fit); fit();
+  const aud = new Audio('out/mix.wav'); let hasAudio = false; aud.addEventListener('canplay', () => hasAudio = true);
+  let playing = false, t0 = 0, base = 0;
+  const now = () => playing ? (hasAudio ? aud.currentTime : base + (performance.now() - t0) / 1000) : base;
+  const play = () => { if (now() >= VIDEO.duration - 0.01) base = 0; playing = true; t0 = performance.now(); if (hasAudio) { aud.currentTime = base; aud.play(); } document.getElementById('play').textContent = 'Pause'; };
+  const pause = () => { base = now(); playing = false; aud.pause(); document.getElementById('play').textContent = 'Play'; };
+  document.getElementById('play').onclick = () => playing ? pause() : play();
+  document.getElementById('scrub').oninput = e => { pause(); base = e.target.value / 1000 * VIDEO.duration; };
+  document.getElementById('safeT').onchange = e => document.documentElement.classList.toggle('safe', e.target.checked);
+  addEventListener('keydown', e => { if (e.code === 'Space') { e.preventDefault(); playing ? pause() : play(); } });
+  (function loop() { let t = now(); if (t >= VIDEO.duration) { t = VIDEO.duration; if (playing) pause(); }
+    seek(t); document.getElementById('time').textContent = t.toFixed(2) + ' / ' + VIDEO.duration.toFixed(2);
+    document.getElementById('scrub').value = Math.round(t / VIDEO.duration * 1000); requestAnimationFrame(loop); })();
+}
+/* PREVIEW-END */
+</script>
+</body>
+</html>

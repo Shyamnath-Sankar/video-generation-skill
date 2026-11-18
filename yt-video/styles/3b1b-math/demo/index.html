@@ -1,0 +1,196 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Odd numbers make squares</title>
+<link rel="stylesheet" href="style.css">
+<style>
+html,body{margin:0;background:#111;overflow:hidden}
+#wrap{position:absolute;left:0;top:0;transform-origin:0 0}
+#stage{position:relative;overflow:hidden;background:var(--bg);color:var(--ink);font-family:var(--font-body);-webkit-font-smoothing:antialiased}
+#bg,#grain{position:absolute;left:0;top:0;width:100%;height:100%}
+#grain{mix-blend-mode:overlay;pointer-events:none;z-index:40}
+.scene{position:absolute;left:0;top:0;width:100%;height:100%;display:none}
+#world{position:absolute;left:0;top:0}
+#captions{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:30}
+.cap-page{font-family:var(--cap-font);-webkit-text-stroke:var(--cap-stroke-w) var(--cap-stroke);paint-order:stroke fill}
+#safe{display:none;position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:60}
+html.safe #safe{display:block}
+#safe div{position:absolute;background:rgba(255,0,40,.25);outline:2px dashed rgba(255,0,40,.8)}
+/* math type: KaTeX_Main for numbers and operators, KaTeX_Math (italic) for variables */
+.tex{font-family:'KaTeX_Main',serif;fill:var(--ink);stroke:var(--ink);stroke-width:1.6px;paint-order:stroke}
+.var{font-family:'KaTeX_Math',serif}
+#ui{position:fixed;left:0;right:0;bottom:0;height:56px;display:flex;gap:12px;align-items:center;padding:0 16px;background:#1d1d22;color:#ddd;font:14px system-ui;z-index:100}
+#ui input[type=range]{flex:1}
+#ui button{font:inherit;padding:6px 14px;border-radius:6px;border:0;background:#3a3a44;color:#fff}
+html.render #ui{display:none}
+</style>
+</head>
+<body>
+<div id="wrap"><div id="stage">
+  <canvas id="bg"></canvas>
+  <!-- one persistent world: 3Blue1Brown-style videos transform objects instead of cutting -->
+  <svg id="world">
+    <g id="tiles"></g>
+    <rect id="outline" fill="none" stroke-width="7" stroke-linejoin="round"/>
+    <g id="sideTop"><path id="braceTop" fill="none" stroke-width="4" stroke-linecap="round"/><text class="tex" id="labTop" font-size="64" text-anchor="middle">4</text></g>
+    <g id="sideLeft"><path id="braceLeft" fill="none" stroke-width="4" stroke-linecap="round"/><text class="tex" id="labLeft" font-size="64" text-anchor="middle">4</text></g>
+    <g id="eq"></g>
+    <g id="gen"><text class="tex" id="genText" font-size="56" text-anchor="middle"></text></g>
+  </svg>
+  <section class="scene" id="sc-hook"></section>
+  <section class="scene" id="sc-build"></section>
+  <section class="scene" id="sc-reveal"></section>
+  <section class="scene" id="sc-why"></section>
+  <section class="scene" id="sc-general"></section>
+  <div id="captions"></div>
+  <canvas id="grain"></canvas>
+  <div id="safe"></div>
+</div></div>
+<div id="ui"><button id="play">Play</button><input id="scrub" type="range" min="0" max="1000" value="0"><span id="time">0.00</span><label><input id="safeT" type="checkbox"> safe zone</label></div>
+
+<script src="timeline.js"></script>
+<script src="style.js"></script>
+<script src="kit.js"></script>
+<script>
+/* BEAT SHEET (Manim vocabulary: Write = outline then fill, Create = stroke draws on, Transform = smooth move/morph)
+   hook     "1 + 3 + 5 + 7 = ?" is Written left to right from frame 0, the ? in yellow
+   build    the equation Transforms below the grid (short) or to the right column (long); each L-shaped layer of tiles grows in on its spoken number
+   reveal   on "square": yellow outline Created around the block, braces + "4" labels, "?" -> 4 squared
+   why      on "L-shaped": layers drift apart, light up one by one, settle back
+   general  the general formula is Written under the equation, n in yellow
+   Timing is Manim-like: smooth rate function, ~0.8-1 s per action, nothing bounces. */
+const C = K.C, S = K.smooth;
+document.documentElement.classList.toggle('render', K.RENDER);
+document.documentElement.classList.toggle('safe', /[?&]safe\b/.test(location.search));
+const LAYER_C = [C.accent, C.accent2, C.accent3, C.accent4];          // blue, yellow, green, red
+K.st('stage', { width: K.W + 'px', height: K.H + 'px' });
+['width', 'height'].forEach((k, i) => K.$('world').setAttribute(k, [K.W, K.H][i])); K.$('world').setAttribute('viewBox', `0 0 ${K.W} ${K.H}`);
+K.safeOverlay(K.$('safe'));
+// LAYOUT per format: 9:16 stacks grid over equation; 16:9 puts the grid left and the algebra in a right column
+const L = K.layout({
+  short: { grid: [540, 735], cell: 132, gap: 12, eqHook: [500, 760, 0.86], eqBuild: [540, 1150, 0.62], gen: [540, 1250, 56], focus: [540, 820] },
+  long:  { grid: [600, 560], cell: 150, gap: 14, eqHook: [960, 540, 1.0], eqBuild: [1380, 470, 0.66], gen: [1380, 620, 54], focus: [960, 540] },
+});
+
+// ---------- tiles: 4x4, layer k = cells with max(row, col) == k (the L shapes 1, 3, 5, 7)
+const CELL = L.cell, GAP = L.gap, N = 4, SPAN = N * CELL + (N - 1) * GAP, GX = L.grid[0] - SPAN / 2, GY = L.grid[1] - SPAN / 2;
+const TILES = [];
+for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
+  const k = Math.max(r, c);
+  const el = K.svg('rect', { width: CELL, height: CELL, rx: 10, fill: LAYER_C[k], 'fill-opacity': 0.72, stroke: LAYER_C[k], 'stroke-width': 4 }, K.$('tiles'));
+  TILES.push({ el, r, c, k, order: k === 0 ? 0 : (r === k ? c : k + (k - r)) });   // grow along the L
+}
+
+// ---------- equation terms, laid out once the fonts are loaded (measuring earlier would use a fallback font)
+const TERMS = [['1', 0], ['+'], ['3', 1], ['+'], ['5', 2], ['+'], ['7', 3], ['='], ['?', 'q']];
+const eq = K.$('eq'); const FS = 120;
+const T = TERMS.map(([s, col]) => {
+  const el = K.svg('text', { class: 'tex', 'font-size': FS, x: 0, y: 0 }, eq); el.textContent = s;
+  if (col !== undefined) { const cc = col === 'q' ? C.accent2 : LAYER_C[col]; el.style.fill = cc; el.style.stroke = cc; }
+  return { el, s };
+});
+// "4^2" replaces "?" on reveal
+const four = K.svg('text', { class: 'tex', 'font-size': FS, x: 0, y: 0 }, eq); four.textContent = '4';
+const sq = K.svg('text', { class: 'tex', 'font-size': FS * 0.6, x: 0, y: -FS * 0.42 }, eq); sq.textContent = '2';
+[four, sq].forEach(e => { e.style.fill = C.accent2; e.style.stroke = C.accent2; });
+const qT = T[T.length - 1];
+function layout() {   // runs once, after fonts load
+  let x = 0; T.forEach(t => { t.x = x; t.w = t.el.getComputedTextLength(); x += t.w + 26; });
+  const EQW = x - 26; T.forEach(t => t.el.setAttribute('x', (t.x - EQW / 2).toFixed(1)));
+  four.setAttribute('x', (qT.x - EQW / 2).toFixed(1)); sq.setAttribute('x', (qT.x - EQW / 2 + four.getComputedTextLength() + 4).toFixed(1));
+}
+window.READY = K.ready.then(layout);
+
+// ---------- general formula: plain text with a yellow n
+const gen = K.$('genText'); gen.setAttribute('x', L.gen[0]); gen.setAttribute('y', L.gen[1]); gen.setAttribute('font-size', L.gen[2]);
+gen.innerHTML = '1 + 3 + 5 + ⋯ + (2<tspan class="var" fill="' + C.accent2 + '" stroke="' + C.accent2 + '">n</tspan> − 1) = <tspan class="var" fill="' + C.accent2 + '" stroke="' + C.accent2 + '">n</tspan><tspan font-size="42" dy="-34">2</tspan>';
+
+// ---------- outline + braces
+const OUT = K.$('outline');
+Object.entries({ x: GX - 16, y: GY - 16, width: SPAN + 32, height: SPAN + 32, rx: 18, stroke: C.accent2 }).forEach(([k, v]) => OUT.setAttribute(k, v));
+const brace = (x1, y1, x2, y2, d) => { // simple curly brace from (x1,y1) to (x2,y2), bulging by d
+  const mx = (x1 + x2) / 2, my = (y1 + y2) / 2, nx = y1 === y2 ? 0 : -d, ny = y1 === y2 ? -d : 0;
+  return `M${x1} ${y1} Q${x1 + nx * 0.6} ${y1 + ny * 0.6} ${x1 + (mx - x1) * 0.15 + nx * 0.6} ${y1 + (my - y1) * 0.15 + ny * 0.6} L${mx - (mx - x1) * 0.1 + nx * 0.6} ${my - (my - y1) * 0.1 + ny * 0.6} Q${mx + nx * 0.6} ${my + ny * 0.6} ${mx + nx} ${my + ny} ` +
+         `M${x2} ${y2} Q${x2 + nx * 0.6} ${y2 + ny * 0.6} ${x2 + (mx - x2) * 0.15 + nx * 0.6} ${y2 + (my - y2) * 0.15 + ny * 0.6} L${mx - (mx - x2) * 0.1 + nx * 0.6} ${my - (my - y2) * 0.1 + ny * 0.6} Q${mx + nx * 0.6} ${my + ny * 0.6} ${mx + nx} ${my + ny}`;
+};
+K.$('braceTop').setAttribute('d', brace(GX, GY - 40, GX + SPAN, GY - 40, 26)); K.$('braceTop').setAttribute('stroke', C.ink);
+K.$('labTop').setAttribute('x', L.grid[0]); K.$('labTop').setAttribute('y', GY - 84);
+K.$('braceLeft').setAttribute('d', brace(GX - 40, GY, GX - 40, GY + SPAN, 26)); K.$('braceLeft').setAttribute('stroke', C.ink);
+K.$('labLeft').setAttribute('x', GX - 100); K.$('labLeft').setAttribute('y', L.grid[1] + 22);
+
+// ---------- one function draws the whole world for time t
+const sc = id => K.scene(id);
+function world(t) {
+  const b = sc('build'), rv = sc('reveal'), wy = sc('why'), gn = sc('general');
+  // equation: Written in the hook (starts before 0 so frame 0 already shows strokes), then Transforms down and shrinks
+  T.forEach((tm, i) => K.write(tm.el, (t + 0.9 - i * 0.14) / 1.0));   // starts before 0: frame 0 already shows the first terms
+  const move = S(K.seg(t, b.start - 0.1, b.start + 0.8));
+  const [hx, hy, hs] = L.eqHook, [bx, by, bs] = L.eqBuild;
+  const ex = K.lerp(hx, bx, move), ey = K.lerp(hy, by, move), es = K.lerp(hs, bs, move);
+  K.st(eq, { transform: `translate(${ex.toFixed(1)}px,${ey.toFixed(1)}px) scale(${es.toFixed(4)})` });
+  // slow camera push-in during the last scene so the end never freezes
+  const push = K.smooth(K.seg(t, gn.start, K.TL.duration));
+  K.st('world', { transformOrigin: `${L.focus[0]}px ${L.focus[1]}px`, transform: `scale(${(1 + 0.045 * push).toFixed(4)})` });
+  // each term glows a little when its tiles land; "?" becomes 4 squared on "square"
+  const tSquare = K.cue('reveal', 'square');
+  const swap = S(K.seg(t, tSquare, tSquare + 0.7));
+  K.st(qT.el, { opacity: (1 - swap).toFixed(3) });
+  [four, sq].forEach((e, i) => K.write(e, (t - tSquare - i * 0.15) / 0.8));
+  // tiles: layer k grows in on its spoken number
+  const words = ['one', 'three', 'five', 'seven'];
+  const tL = words.map(w => K.cue('build', w));
+  const tLsh = K.cue('why', 'lshaped'), tNext = K.cue('why', 'next');
+  for (const tile of TILES) {
+    const t0 = tL[tile.k] + tile.order * 0.06;
+    const g = S(K.seg(t, t0 - 0.15, t0 + 0.45));
+    // why: layers drift apart along the diagonal, light up in turn, then settle
+    const apart = K.thereAndBack(K.seg(t, tLsh - 0.2, wy.end - 0.2)) * tile.k * 16;
+    const light = Math.max(0, 1 - Math.abs((t - tNext) * 2.2 - tile.k * 0.9)) * (t > tLsh ? 1 : 0);
+    const cx = GX + tile.c * (CELL + GAP) + CELL / 2 + apart, cy = GY + tile.r * (CELL + GAP) + CELL / 2 + apart;
+    const s = g * (1 + 0.12 * light);
+    tile.el.setAttribute('x', (cx - CELL * s / 2).toFixed(1)); tile.el.setAttribute('y', (cy - CELL * s / 2).toFixed(1));
+    tile.el.setAttribute('width', (CELL * s).toFixed(1)); tile.el.setAttribute('height', (CELL * s).toFixed(1));
+    tile.el.setAttribute('fill-opacity', (0.72 * Math.min(1, g * 1.5) + 0.25 * light).toFixed(3));
+    tile.el.style.display = g <= 0.001 ? 'none' : '';
+  }
+  // reveal: outline is Created on "square", braces + labels Written just after
+  K.draw(OUT, S(K.seg(t, tSquare - 0.15, tSquare + 0.7)) * (1 - K.seg(t, tLsh - 0.3, tLsh + 0.1)));
+  ['braceTop', 'braceLeft'].forEach((id, i) => K.draw(K.$(id), S(K.seg(t, tSquare + 0.3 + i * 0.15, tSquare + 1.1 + i * 0.15)) * (1 - K.seg(t, tLsh - 0.3, tLsh + 0.1))));
+  ['labTop', 'labLeft'].forEach((id, i) => { const p = (t - tSquare - 0.7 - i * 0.15) / 0.8; K.write(K.$(id), wy.start < t ? p * (1 - K.seg(t, tLsh - 0.3, tLsh + 0.1)) : p); });
+  // general formula Written under the equation
+  K.write(gen, (t - gn.start - 0.25) / 1.6);
+  K.st('genText', { display: t < gn.start ? 'none' : '' });
+}
+
+// ---------- wiring
+K.background(K.$('bg'));
+const grain = K.grain(K.$('grain'));
+const caps = K.captions(K.$('captions'));
+const scenes = K.runScenes({});           // sections are empty: this video is one continuous world
+window.VIDEO = { w: K.W, h: K.H, duration: K.TL.duration, fps: K.TL.fps };
+window.seek = t => { t = K.clamp(t, 0, VIDEO.duration); scenes(t); world(t); caps(t); grain(t); };
+seek(0);
+
+/* PREVIEW-START */
+if (!K.RENDER) {
+  const wrap = document.getElementById('wrap');
+  const fit = () => { const s = Math.min(innerWidth / K.W, (innerHeight - 56) / K.H); wrap.style.transform = `translate(${(innerWidth - K.W * s) / 2}px,0) scale(${s})`; };
+  addEventListener('resize', fit); fit();
+  const aud = new Audio('out/mix.wav'); let hasAudio = false; aud.addEventListener('canplay', () => hasAudio = true);
+  let playing = false, t0 = 0, base = 0;
+  const now = () => playing ? (hasAudio ? aud.currentTime : base + (performance.now() - t0) / 1000) : base;
+  const play = () => { if (now() >= VIDEO.duration - 0.01) base = 0; playing = true; t0 = performance.now(); if (hasAudio) { aud.currentTime = base; aud.play(); } document.getElementById('play').textContent = 'Pause'; };
+  const pause = () => { base = now(); playing = false; aud.pause(); document.getElementById('play').textContent = 'Play'; };
+  document.getElementById('play').onclick = () => playing ? pause() : play();
+  document.getElementById('scrub').oninput = e => { pause(); base = e.target.value / 1000 * VIDEO.duration; };
+  document.getElementById('safeT').onchange = e => document.documentElement.classList.toggle('safe', e.target.checked);
+  addEventListener('keydown', e => { if (e.code === 'Space') { e.preventDefault(); playing ? pause() : play(); } });
+  (function loop() { let t = now(); if (t >= VIDEO.duration) { t = VIDEO.duration; if (playing) pause(); }
+    seek(t); document.getElementById('time').textContent = t.toFixed(2) + ' / ' + VIDEO.duration.toFixed(2);
+    document.getElementById('scrub').value = Math.round(t / VIDEO.duration * 1000); requestAnimationFrame(loop); })();
+}
+/* PREVIEW-END */
+</script>
+</body>
+</html>

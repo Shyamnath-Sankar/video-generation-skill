@@ -1,0 +1,59 @@
+{
+  "name": "kodekloud-devops",
+  "label": "DevOps cartoon tutorial (KodeKloud-inspired)",
+  "inspired_by": "bright, friendly DevOps/cloud explainers: outlined flat cards, servers and containers as labelled boxes, packets flowing on dashed connectors, terminal windows",
+  "colors": {
+    "bg": "#EAF2FF",
+    "bg2": "#CFE2FF",
+    "ink": "#12224A",
+    "muted": "#5B6B8C",
+    "accent": "#2563EB",
+    "accent2": "#FF8A00",
+    "accent3": "#16A34A",
+    "accent4": "#FACC15",
+    "card": "#FFFFFF",
+    "cardInk": "#12224A",
+    "line": "#12224A",
+    "term": "#0F172A"
+  },
+  "fonts": {
+    "display": "Nunito",
+    "body": "Nunito",
+    "mono": "JetBrains Mono"
+  },
+  "weights": {
+    "display": 900,
+    "body": 700
+  },
+  "captions": {
+    "mode": "pop",
+    "font": "display",
+    "size": 70,
+    "y": 1310,
+    "weight": 900,
+    "color": "ink",
+    "active": "accent",
+    "stroke": "card",
+    "strokeWidth": 12
+  },
+  "transition": "pop",
+  "background": {
+    "kind": "sky",
+    "vignette": 0,
+    "grain": 0
+  },
+  "motion": {
+    "ease": "cubic",
+    "spring": [
+      16,
+      0.62
+    ]
+  },
+  "music": {
+    "mood": "upbeat",
+    "bpm": 112
+  },
+  "sfx": {
+    "enabled": true
+  }
+}

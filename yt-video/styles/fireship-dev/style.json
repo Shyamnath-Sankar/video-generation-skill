@@ -1,0 +1,62 @@
+{
+  "name": "fireship-dev",
+  "label": "Fast dev news (Fireship-inspired)",
+  "inspired_by": "rapid-fire developer explainers: dark UI, code on screen, yellow highlight, a new visual every 1-2 seconds, punch-in cuts",
+  "colors": {
+    "bg": "#0C0C0F",
+    "bg2": "#121218",
+    "ink": "#FFFFFF",
+    "muted": "#8A8F98",
+    "accent": "#FFC800",
+    "accent2": "#FF6B00",
+    "accent3": "#22D3EE",
+    "accent4": "#E11D48",
+    "card": "#17171D",
+    "cardInk": "#FFFFFF",
+    "line": "#FFFFFF"
+  },
+  "fonts": {
+    "display": "Geist",
+    "body": "Geist",
+    "mono": "JetBrains Mono"
+  },
+  "weights": {
+    "display": 900,
+    "body": 600
+  },
+  "captions": {
+    "mode": "box",
+    "font": "display",
+    "size": 86,
+    "y": 1300,
+    "weight": 900,
+    "case": "upper",
+    "color": "ink",
+    "active": "accent",
+    "activeText": "bg",
+    "stroke": "bg",
+    "strokeWidth": 10
+  },
+  "transition": "punch",
+  "background": {
+    "kind": "grid",
+    "step": 72,
+    "gridOpacity": 0.05,
+    "vignette": 0.45,
+    "grain": 0.04
+  },
+  "motion": {
+    "ease": "cubic",
+    "spring": [
+      20,
+      0.85
+    ]
+  },
+  "music": {
+    "mood": "tech",
+    "bpm": 128
+  },
+  "sfx": {
+    "enabled": true
+  }
+}

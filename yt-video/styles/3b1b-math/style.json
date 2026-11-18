@@ -1,0 +1,61 @@
+{
+  "name": "3b1b-math",
+  "label": "Math explainer (3Blue1Brown-inspired)",
+  "inspired_by": "Manim-style visual math: dark canvas, Computer-Modern type, blue/yellow/green, smooth Create/Write/Transform",
+  "colors": {
+    "bg": "#121417",
+    "bg2": "#121417",
+    "ink": "#ECECEC",
+    "muted": "#7A7F87",
+    "accent": "#58C4DD",
+    "accent2": "#F7D96F",
+    "accent3": "#83C167",
+    "accent4": "#FC6255",
+    "teal": "#5CD0B3",
+    "brown": "#9C7A5B",
+    "card": "#1B1E23",
+    "cardInk": "#ECECEC",
+    "line": "#58C4DD"
+  },
+  "fonts": {
+    "display": "KaTeX_Main",
+    "body": "KaTeX_Main",
+    "math": "KaTeX_Math",
+    "mono": "JetBrains Mono"
+  },
+  "weights": {
+    "display": 400,
+    "body": 400
+  },
+  "captions": {
+    "mode": "minimal",
+    "font": "body",
+    "size": 56,
+    "y": 1340,
+    "weight": 400,
+    "color": "ink",
+    "active": "accent2",
+    "stroke": "bg",
+    "strokeWidth": 0
+  },
+  "transition": "fade-transform",
+  "background": {
+    "kind": "flat",
+    "vignette": 0,
+    "grain": 0
+  },
+  "motion": {
+    "ease": "smooth",
+    "spring": [
+      9,
+      1
+    ]
+  },
+  "music": {
+    "mood": "chill",
+    "bpm": 80
+  },
+  "sfx": {
+    "enabled": false
+  }
+}

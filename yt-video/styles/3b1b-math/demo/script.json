@@ -1,0 +1,27 @@
+{
+  "title": "Odd numbers make squares",
+  "style": "3b1b-math",
+  "fps": 30,
+  "voice": {
+    "mode": "design",
+    "instruct": "male, middle-aged, low pitch, american accent",
+    "ref_audio": null,
+    "ref_text": null,
+    "speed": 0.95
+  },
+  "music": {"enabled": false},
+  "sfx": {"enabled": false},
+  "pacing": {"lead_in": 0.15, "gap": 0.35, "tail": 1.0},
+  "scenes": [
+    {"id": "hook", "say": "Add up the odd numbers, and something strange happens.", "min": 2.4,
+     "visual": "1 + 3 + 5 + 7 = ? is written on in the centre (Manim Write), the ? in yellow."},
+    {"id": "build", "say": "One. Plus three. Plus five. Plus seven.", "caption": "1. Plus 3. Plus 5. Plus 7.",
+     "visual": "Equation transforms down; each L-shaped layer of tiles grows in on its number, colour-matched to its term."},
+    {"id": "reveal", "say": "You always get a perfect square.",
+     "visual": "Yellow outline is drawn around the 4x4 block on 'square'; the ? becomes 4 squared; side lengths labelled 4."},
+    {"id": "why", "say": "Each odd number is just the next L-shaped layer.",
+     "visual": "Layers separate slightly on 'L-shaped' and light up one after another, then settle back."},
+    {"id": "general", "say": "So the first n odd numbers always add up to n squared.", "caption": "So the first n odd numbers always add up to n².",
+     "visual": "General formula written below: 1 + 3 + ... + (2n - 1) = n squared, n in yellow."}
+  ]
+}

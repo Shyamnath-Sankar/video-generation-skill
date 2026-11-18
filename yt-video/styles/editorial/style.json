@@ -1,0 +1,58 @@
+{
+  "name": "editorial",
+  "label": "Editorial kinetic (default)",
+  "inspired_by": "Bart's motion-graphics high-energy explainer: kinetic type, one accent colour, springs",
+  "colors": {
+    "bg": "#0E0E12",
+    "bg2": "#1A1A22",
+    "ink": "#F4F1EA",
+    "muted": "#8D8A84",
+    "accent": "#FF4F1A",
+    "accent2": "#3B5BFF",
+    "accent3": "#2BD67B",
+    "accent4": "#FFD23F",
+    "card": "#F4F1EA",
+    "cardInk": "#0E0E12",
+    "line": "#F4F1EA"
+  },
+  "fonts": {
+    "display": "Geist",
+    "body": "Geist",
+    "mono": "Geist Mono"
+  },
+  "weights": {
+    "display": 900,
+    "body": 600
+  },
+  "captions": {
+    "mode": "pop",
+    "font": "display",
+    "size": 74,
+    "y": 1300,
+    "weight": 850,
+    "color": "ink",
+    "active": "accent",
+    "stroke": "bg",
+    "strokeWidth": 12
+  },
+  "transition": "push",
+  "background": {
+    "kind": "gradient",
+    "vignette": 0.35,
+    "grain": 0.05
+  },
+  "motion": {
+    "ease": "cubic",
+    "spring": [
+      14,
+      0.82
+    ]
+  },
+  "music": {
+    "mood": "upbeat",
+    "bpm": 116
+  },
+  "sfx": {
+    "enabled": true
+  }
+}

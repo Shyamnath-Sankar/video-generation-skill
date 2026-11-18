@@ -1,0 +1,58 @@
+{
+  "name": "vox-doc",
+  "label": "Documentary explainer (Vox-inspired)",
+  "inspired_by": "paper-and-print documentary explainers: newsprint texture, serif headlines, highlighter swipes, red marker circles, documents sliding in",
+  "colors": {
+    "bg": "#F1EADB",
+    "bg2": "#E8DFCB",
+    "ink": "#1A1A1A",
+    "muted": "#6B6457",
+    "accent": "#FFE45C",
+    "accent2": "#D7263D",
+    "accent3": "#2E5BBA",
+    "accent4": "#1A1A1A",
+    "card": "#FFFDF7",
+    "cardInk": "#1A1A1A",
+    "line": "#1A1A1A"
+  },
+  "fonts": {
+    "display": "Playfair Display",
+    "body": "Geist",
+    "mono": "JetBrains Mono"
+  },
+  "weights": {
+    "display": 800,
+    "body": 600
+  },
+  "captions": {
+    "mode": "minimal",
+    "font": "body",
+    "size": 54,
+    "y": 1340,
+    "weight": 650,
+    "color": "ink",
+    "active": "accent2",
+    "stroke": "bg",
+    "strokeWidth": 0
+  },
+  "transition": "slide",
+  "background": {
+    "kind": "paper",
+    "vignette": 0.18,
+    "grain": 0.05
+  },
+  "motion": {
+    "ease": "cubic",
+    "spring": [
+      12,
+      0.95
+    ]
+  },
+  "music": {
+    "mood": "cinematic",
+    "bpm": 92
+  },
+  "sfx": {
+    "enabled": true
+  }
+}

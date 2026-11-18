@@ -1,0 +1,64 @@
+{
+  "name": "bytebytego-diagram",
+  "label": "System-design diagrams (ByteByteGo-inspired)",
+  "inspired_by": "clean system-design diagrams: white canvas, pastel boxes with coloured headers, numbered arrows, step-by-step reveals",
+  "colors": {
+    "bg": "#FFFFFF",
+    "bg2": "#F5F7FB",
+    "ink": "#1F2937",
+    "muted": "#6B7280",
+    "accent": "#4F46E5",
+    "accent2": "#F59E0B",
+    "accent3": "#10B981",
+    "accent4": "#EF4444",
+    "pastel1": "#E0E7FF",
+    "pastel2": "#FEF3C7",
+    "pastel3": "#D1FAE5",
+    "pastel4": "#FEE2E2",
+    "card": "#FFFFFF",
+    "cardInk": "#1F2937",
+    "line": "#1F2937"
+  },
+  "fonts": {
+    "display": "Geist",
+    "body": "Geist",
+    "mono": "JetBrains Mono"
+  },
+  "weights": {
+    "display": 800,
+    "body": 600
+  },
+  "captions": {
+    "mode": "pop",
+    "font": "display",
+    "size": 66,
+    "y": 1320,
+    "weight": 800,
+    "color": "ink",
+    "active": "accent",
+    "stroke": "card",
+    "strokeWidth": 12
+  },
+  "transition": "slide",
+  "background": {
+    "kind": "dots",
+    "step": 48,
+    "gridOpacity": 0.1,
+    "vignette": 0,
+    "grain": 0
+  },
+  "motion": {
+    "ease": "cubic",
+    "spring": [
+      14,
+      0.9
+    ]
+  },
+  "music": {
+    "mood": "chill",
+    "bpm": 96
+  },
+  "sfx": {
+    "enabled": true
+  }
+}

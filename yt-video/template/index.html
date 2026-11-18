@@ -1,0 +1,233 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Video</title>
+<link rel="stylesheet" href="style.css">
+<style>
+/* ---- frame (do not change: the renderer and checker rely on #stage being W x H at 0,0 in ?render).
+   W x H comes from the format (short 1080x1920, long 1920x1080) and is set from JS below. ---- */
+html,body{margin:0;background:#111;overflow:hidden}
+#wrap{position:absolute;left:0;top:0;transform-origin:0 0}
+#stage{position:relative;overflow:hidden;background:var(--bg);color:var(--ink);
+  font-family:var(--font-body);font-weight:var(--w-body);-webkit-font-smoothing:antialiased;font-feature-settings:"tnum" 1}
+#bg,#grain{position:absolute;left:0;top:0;width:100%;height:100%}
+#grain{mix-blend-mode:overlay;pointer-events:none;z-index:40}
+.scene{position:absolute;left:0;top:0;width:100%;height:100%;transform-origin:50% 40%;display:none}
+.a{position:absolute;white-space:nowrap}
+.display{font-family:var(--font-display);font-weight:var(--w-display);letter-spacing:-0.025em;line-height:1}
+.mono{font-family:var(--font-mono);letter-spacing:0.08em}
+.center{transform:translate(-50%,-50%)}
+#captions{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:30}
+.cap-page{font-family:var(--cap-font);-webkit-text-stroke:var(--cap-stroke-w) var(--cap-stroke);paint-order:stroke fill;transform-origin:50% 50%}
+.cap-w{transform-origin:50% 60%;margin:0 0.04em}
+#safe{display:none;position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:60}
+html.safe #safe{display:block}
+#safe div{position:absolute;background:rgba(255,0,40,.25);outline:2px dashed rgba(255,0,40,.8)}
+
+/* ---- this video's scenes (looks here; positions and sizes per format live in the LAYOUT table in the script) ---- */
+#hk-kick{color:var(--muted)}
+#hk-num{color:var(--ink);-webkit-text-stroke:5px var(--ink)}
+#hk-track{height:60px;border-radius:30px;box-sizing:border-box;border:4px solid var(--muted)}
+#hk-fill{position:absolute;left:6px;top:6px;height:40px;border-radius:20px;background:var(--accent)}
+#hk-lab{color:var(--muted)}
+#hk-lab b{color:var(--accent);font-weight:800}
+
+#tw-num{font-size:230px}
+#tw-lab{font-size:36px;color:var(--muted)}
+#tw-chip{padding:16px 34px;border-radius:999px;background:var(--card);color:var(--cardInk);font-weight:800}
+
+#why-grid{left:0;top:0}
+.dot{position:absolute;width:26px;height:26px;margin:-13px 0 0 -13px;border-radius:50%;background:var(--muted)}
+#why-kick{color:var(--muted)}
+
+#out-kick{color:var(--muted)}
+#out-pill{height:150px;border-radius:75px;display:flex;align-items:center;justify-content:center;gap:24px;
+  font-size:64px;font-weight:850;font-family:var(--font-display);box-sizing:border-box}
+#out-pill svg{width:56px;height:56px}
+#out-ring{width:10px;height:10px;border-radius:50%;border:6px solid var(--accent)}
+#cursor{left:0;top:0;width:64px;z-index:20;filter:drop-shadow(0 4px 6px rgba(0,0,0,.35))}
+
+/* ---- preview UI (never in ?render) ---- */
+#ui{position:fixed;left:0;right:0;bottom:0;height:56px;display:flex;gap:12px;align-items:center;padding:0 16px;
+  background:#1d1d22;color:#ddd;font:14px system-ui;z-index:100}
+#ui input[type=range]{flex:1}
+#ui button{font:inherit;padding:6px 14px;border-radius:6px;border:0;background:#3a3a44;color:#fff;cursor:pointer}
+html.render #ui{display:none}
+</style>
+</head>
+<body>
+<div id="wrap"><div id="stage">
+  <canvas id="bg"></canvas>
+
+  <section class="scene" id="sc-hook">
+    <div class="a mono" id="hk-kick">BRAIN FACT · 01</div>
+    <div class="a display center" id="hk-num">2%</div>
+    <div class="a" id="hk-track"><div id="hk-fill"></div></div>
+    <div class="a" id="hk-lab"><b>2%</b> of body weight</div>
+  </section>
+
+  <section class="scene" id="sc-twist">
+    <svg class="a" id="tw-svg" width="1080" height="940" viewBox="0 0 1080 940">
+      <circle cx="540" cy="440" r="300" fill="none" style="stroke:var(--muted)" stroke-opacity="0.25" stroke-width="64"/>
+      <circle id="tw-arc" cx="540" cy="440" r="300" fill="none" style="stroke:var(--accent)" stroke-width="64" stroke-linecap="round" transform="rotate(-90 540 440)"/>
+    </svg>
+    <div class="a display center" id="tw-num">0%</div>
+    <div class="a mono center" id="tw-lab">OF YOUR ENERGY</div>
+    <div class="a center" id="tw-chip">2% → 20%</div>
+  </section>
+
+  <section class="scene" id="sc-why">
+    <div class="a mono" id="why-kick">WHERE IT GOES</div>
+    <div class="a" id="why-grid"></div>
+  </section>
+
+  <section class="scene" id="sc-outro">
+    <div class="a mono center" id="out-kick">MORE TOMORROW</div>
+    <div class="a" id="out-ring"></div>
+    <div class="a" id="out-pill"><svg id="out-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path id="out-icon-p" d="M12 5v14M5 12h14"/></svg><span id="out-txt">Follow</span></div>
+    <svg class="a" id="cursor" viewBox="0 0 40 56"><path d="M3 3 L3 41 L12.5 32 L19 47 L25.5 44.2 L19.2 29.8 L32 29.8 Z" fill="#0B0B0B" stroke="#fff" stroke-width="2.6" stroke-linejoin="round"/></svg>
+  </section>
+
+  <div id="captions"></div>
+  <canvas id="grain"></canvas>
+  <div id="safe"></div>
+</div></div>
+<div id="ui"><button id="play">Play</button><input id="scrub" type="range" min="0" max="1000" value="0"><span id="time">0.00</span>
+  <label><input id="safeT" type="checkbox"> safe zone</label></div>
+
+<script src="timeline.js"></script>
+<script src="style.js"></script>
+<script src="kit.js"></script>
+<script>
+/* BEAT SHEET (times come from timeline.js; cues are spoken words, so visuals land on the voice)
+   hook   0.0   "2%" slams on "two"; bar fills its 2% sliver on "body"; whoosh on exit
+   twist        ring fills to 20% on "twenty", counter follows; chip "2% -> 20%" pops on "energy"
+   why          81 neurons pop in on "neurons", orange ripple from centre on "fire"
+   outro        cursor glides in, clicks Follow on "follow"; pill turns into "Following" with a check
+*/
+const C = K.C;
+document.documentElement.classList.toggle('render', K.RENDER);
+document.documentElement.classList.toggle('safe', /[?&]safe\b/.test(location.search));
+K.st('stage', { width: K.W + 'px', height: K.H + 'px' });   // 1080x1920 (short) or 1920x1080 (long)
+K.safeOverlay(K.$('safe'));
+
+// ---------- LAYOUT: one table per format. Short = stacked in the 9:16 safe zone; long = side by side in 16:9.
+const L = K.layout({
+  short: { ring: [540, 700], grid: [540, 780, 88], pill: [540, 760], cursorFrom: [360, 540],
+    place: { 'hk-kick': { left: 80, top: 330, fontSize: 34 }, 'hk-num': { left: 540, top: 640, fontSize: 470 },
+             'hk-track': { left: 140, top: 1000, width: 800 }, 'hk-lab': { left: 140, top: 1086, fontSize: 40 },
+             'tw-chip': { left: 540, top: 1110, fontSize: 46 }, 'why-kick': { left: 80, top: 330, fontSize: 34 },
+             'out-kick': { left: 540, top: 470, fontSize: 36 } } },
+  long: { ring: [620, 540], grid: [960, 560, 78], pill: [960, 580], cursorFrom: [560, 380],
+    place: { 'hk-kick': { left: 120, top: 100, fontSize: 30 }, 'hk-num': { left: 620, top: 530, fontSize: 500 },
+             'hk-track': { left: 1100, top: 500, width: 620 }, 'hk-lab': { left: 1100, top: 590, fontSize: 44 },
+             'tw-chip': { left: 1350, top: 540, fontSize: 60 }, 'why-kick': { left: 120, top: 100, fontSize: 30 },
+             'out-kick': { left: 960, top: 400, fontSize: 34 } } },
+});
+K.place(L.place);
+K.place({ 'tw-svg': { left: L.ring[0] - 540, top: L.ring[1] - 440 }, 'tw-num': { left: L.ring[0], top: L.ring[1] }, 'tw-lab': { left: L.ring[0], top: L.ring[1] + 150 },
+          'out-pill': { left: L.pill[0], top: L.pill[1] }, 'out-ring': { left: L.pill[0], top: L.pill[1] } });
+
+// ---------- hook
+function hook(t, lt, sc) {
+  const tNum = K.cue('hook', 'two'), tBody = K.cue('hook', 'body');
+  K.apply('hk-kick', K.vis(t, sc.start + 0.05, null));
+  // frame 0 already shows the hook as an outline; it fills and slams on the word
+  const k = K.spring(t - tNum + 0.08, 15, 0.7), fill = K.seg(t, tNum - 0.08, tNum + 0.05);
+  const intro = K.spring(t + 0.25, 10, 0.9);                      // already mostly settled at t=0
+  K.st('hk-num', { color: K.alpha(C.ink, fill), opacity: (0.45 + 0.55 * fill).toFixed(3),
+    transform: `translate(-50%,-50%) scale(${(t < tNum - 0.08 ? 0.9 + 0.1 * intro : 1.25 - 0.25 * k).toFixed(4)})` });
+  K.apply('hk-track', K.vis(t, tNum + 0.25, null));
+  const f = K.spring(t - tBody, 12, 0.9);
+  K.st('hk-fill', { width: (16 * f).toFixed(1) + 'px' });   // 2% of 788px is 16px: tiny on purpose
+  K.apply('hk-lab', K.vis(t, tBody + 0.1, null));
+}
+
+// ---------- twist
+const ARC = 2 * Math.PI * 300;
+function twist(t, lt, sc) {
+  const tTw = K.cue('twist', 'twenty'), tEn = K.cue('twist', 'energy');
+  const p = K.spring(t - tTw, 7, 1) * 0.2;
+  K.st('tw-arc', { strokeDasharray: `${ARC} ${ARC}`, strokeDashoffset: (ARC * (1 - p)).toFixed(1) });
+  K.text('tw-num', Math.round(p * 100) + '%');
+  K.st('tw-num', { transform: `translate(-50%,-50%) scale(${(1 + 0.08 * K.spring(t - tTw, 18, 0.5) * (1 - K.seg(t, tTw + 0.6, tTw + 1))).toFixed(4)})` });
+  K.apply('tw-lab', K.vis(t, sc.start + 0.1, null), 'translate(-50%,-50%)');
+  const chip = K.spring(t - tEn, 16, 0.62);
+  K.st('tw-chip', { opacity: K.clamp(chip * 3).toFixed(3), transform: `translate(-50%,-50%) scale(${(0.6 + 0.4 * chip).toFixed(4)})`, display: t < tEn ? 'none' : '' });
+}
+
+// ---------- why: a grid of neurons built once at load (deterministic)
+const DOTS = [];
+(() => {
+  const g = K.$('why-grid');
+  for (let r = 0; r < 9; r++) for (let c = 0; c < 9; c++) {
+    const d = document.createElement('div'); d.className = 'dot';
+    const x = L.grid[0] + (c - 4) * L.grid[2], y = L.grid[1] + (r - 4) * L.grid[2];
+    d.style.left = x + 'px'; d.style.top = y + 'px'; g.appendChild(d);
+    DOTS.push({ el: d, x, y, dist: Math.hypot(c - 4, r - 4), seed: K.rng(r * 9 + c + 1)() });
+  }
+})();
+function why(t, lt, sc) {
+  const tIn = K.cue('why', 'neurons'), tFire = K.cue('why', 'fire');
+  K.apply('why-kick', K.vis(t, sc.start + 0.05, null));
+  for (const d of DOTS) {
+    const pin = K.spring(t - (sc.start + 0.05 + d.seed * 0.45), 18, 0.65);          // dim dots pop in from the start
+    const wake = K.seg(t, tIn - 0.1 + d.seed * 0.3, tIn + 0.2 + d.seed * 0.3);      // brighten on "neurons"
+    const wave = Math.exp(-Math.pow((t - tFire) * 9 - d.dist * 1.1, 2) / 2) * (t > tFire - 0.2 ? 1 : 0);  // ring travelling outward
+    const lit = K.seg(t, tFire + d.dist * 0.12, tFire + d.dist * 0.12 + 0.25);
+    K.st(d.el, { transform: `scale(${(pin * (0.7 + 0.3 * wake) * (1 + 0.9 * wave)).toFixed(3)})`, opacity: (0.35 + 0.65 * wake).toFixed(3),
+      background: lit > 0 ? K.mix(C.muted, C.accent, lit) : C.muted });
+  }
+}
+
+// ---------- outro: cursor clicks Follow
+const PLUS = 'M12 5v14M5 12h14', CHECK = 'M20 6 9 17l-5-5';
+function outro(t, lt, sc) {
+  const tF = K.cue('outro', 'follow');
+  K.apply('out-kick', K.vis(t, sc.start + 0.05, null), 'translate(-50%,-50%)');
+  const done = t >= tF + 0.05;
+  const pw = K.track(430, [[tF + 0.05, 520]])(t);
+  K.st('out-pill', { width: pw.toFixed(1) + 'px', transform: `translate(-50%,-50%) scale(${(1 - 0.06 * K.thereAndBack(K.seg(t, tF - 0.08, tF + 0.12))).toFixed(4)})`,
+    background: done ? K.mix(C.accent, C.card, K.seg(t, tF + 0.05, tF + 0.35)) : C.accent, color: done ? K.mix('#FFFFFF', C.cardInk, K.seg(t, tF + 0.05, tF + 0.35)) : '#FFFFFF' });
+  K.text('out-txt', done ? 'Following' : 'Follow');
+  if (K.$('out-icon-p')._d !== (done ? CHECK : PLUS)) { K.$('out-icon-p').setAttribute('d', done ? CHECK : PLUS); K.$('out-icon-p')._d = done ? CHECK : PLUS; }
+  const ring = K.seg(t, tF, tF + 0.6);
+  K.st('out-ring', { opacity: (ring > 0 && ring < 1 ? 1 - ring : 0).toFixed(3), transform: `translate(-50%,-50%) scale(${(1 + ring * 40).toFixed(2)})` });
+  const [px, py] = L.pill, [fx, fy] = L.cursorFrom;
+  const path = K.kf([[sc.start, px + fx], [tF - 0.15, px + 60, K.ease]]), pathY = K.kf([[sc.start, py + fy], [tF - 0.15, py + 30, K.ease]]);
+  const press = 1 - 0.15 * K.thereAndBack(K.seg(t, tF - 0.1, tF + 0.1));
+  K.st('cursor', { transform: `translate(${path(t).toFixed(1)}px,${pathY(t).toFixed(1)}px) scale(${press.toFixed(3)})`, opacity: K.eo((t - sc.start) / 0.2).toFixed(3) });
+}
+
+// ---------- wiring
+K.background(K.$('bg'));
+const grain = K.grain(K.$('grain'));
+const caps = K.captions(K.$('captions'));
+const scenes = K.runScenes({ hook, twist, why, outro });
+window.VIDEO = { w: K.W, h: K.H, duration: K.TL.duration, fps: K.TL.fps };
+window.seek = t => { t = K.clamp(t, 0, VIDEO.duration); scenes(t); caps(t); grain(t); };
+seek(0);
+
+/* PREVIEW-START: interactive preview with the real soundtrack (out/mix.wav). Never runs with ?render. */
+if (!K.RENDER) {
+  const wrap = document.getElementById('wrap'), ui = document.getElementById('ui');
+  const fit = () => { const s = Math.min(innerWidth / K.W, (innerHeight - 56) / K.H); wrap.style.transform = `translate(${(innerWidth - K.W * s) / 2}px,0) scale(${s})`; };
+  addEventListener('resize', fit); fit();
+  const aud = new Audio('out/mix.wav'); let hasAudio = false; aud.addEventListener('canplay', () => hasAudio = true);
+  let playing = false, t0 = 0, base = 0;
+  const now = () => playing ? (hasAudio ? aud.currentTime : base + (performance.now() - t0) / 1000) : base;
+  const play = () => { if (now() >= VIDEO.duration - 0.01) base = 0; playing = true; t0 = performance.now(); if (hasAudio) { aud.currentTime = base; aud.play(); } document.getElementById('play').textContent = 'Pause'; };
+  const pause = () => { base = now(); playing = false; aud.pause(); document.getElementById('play').textContent = 'Play'; };
+  document.getElementById('play').onclick = () => playing ? pause() : play();
+  document.getElementById('scrub').oninput = e => { pause(); base = e.target.value / 1000 * VIDEO.duration; };
+  document.getElementById('safeT').onchange = e => document.documentElement.classList.toggle('safe', e.target.checked);
+  addEventListener('keydown', e => { if (e.code === 'Space') { e.preventDefault(); playing ? pause() : play(); } });
+  (function loop() { let t = now(); if (t >= VIDEO.duration) { t = VIDEO.duration; if (playing) pause(); }
+    seek(t); document.getElementById('time').textContent = t.toFixed(2) + ' / ' + VIDEO.duration.toFixed(2);
+    document.getElementById('scrub').value = Math.round(t / VIDEO.duration * 1000); requestAnimationFrame(loop); })();
+}
+/* PREVIEW-END */
+</script>
+</body>
+</html>

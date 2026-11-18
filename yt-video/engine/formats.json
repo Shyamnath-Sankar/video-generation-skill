@@ -1,0 +1,38 @@
+{
+  "short": {
+    "label": "YouTube Short, vertical 9:16",
+    "w": 1080, "h": 1920, "scale": 1, "aspect": "9:16",
+    "safe": { "left": 60, "top": 288, "right": 940, "bottom": 1440 },
+    "safe_note": "Shorts UI: top 288 px (search/menu), bottom 480 px (title, channel, description), right 140 px (like/comment/share)",
+    "max_duration": 180, "soft_duration": 60,
+    "min_text_px": 34,
+    "captions": { "burn": true, "y": null, "width": 780, "size_scale": 1.0, "words_scale": 1.0 },
+    "freeze_warn_s": 3,
+    "thumbnail": [1080, 1920],
+    "stills_width": 360
+  },
+  "long": {
+    "label": "Long-form YouTube video, landscape 16:9, 1080p",
+    "w": 1920, "h": 1080, "scale": 1, "aspect": "16:9",
+    "safe": { "left": 96, "top": 54, "right": 1824, "bottom": 1026 },
+    "safe_note": "title-safe 5% margins; the player's controls and progress bar cover the bottom ~120 px on hover, so keep captions above y 1000",
+    "max_duration": 43200, "soft_duration": null,
+    "min_text_px": 28,
+    "captions": { "burn": false, "y": 930, "width": 1400, "size_scale": 0.82, "words_scale": 1.6 },
+    "freeze_warn_s": 6,
+    "thumbnail": [1280, 720],
+    "stills_width": 480
+  },
+  "long-4k": {
+    "label": "Long-form YouTube video, landscape 16:9, rendered at 3840x2160 (page authored at 1920x1080, captured at 2x)",
+    "w": 1920, "h": 1080, "scale": 2, "aspect": "16:9",
+    "safe": { "left": 96, "top": 54, "right": 1824, "bottom": 1026 },
+    "safe_note": "same as long; coordinates are in 1920x1080 page pixels",
+    "max_duration": 43200, "soft_duration": null,
+    "min_text_px": 28,
+    "captions": { "burn": false, "y": 930, "width": 1400, "size_scale": 0.82, "words_scale": 1.6 },
+    "freeze_warn_s": 6,
+    "thumbnail": [1280, 720],
+    "stills_width": 480
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "title": "Your brain's energy bill",
+  "style": "editorial",
+  "fps": 30,
+  "voice": {
+    "mode": "design",
+    "instruct": "male, young adult, moderate pitch, american accent",
+    "ref_audio": null,
+    "ref_text": null,
+    "speed": 1.0
+  },
+  "music": {"enabled": false},
+  "sfx": {"enabled": null},
+  "pacing": {"lead_in": 0.12, "gap": 0.22, "tail": 0.7},
+  "scenes": [
+    {"id": "hook", "say": "Your brain is only two percent of your body weight.", "caption": "Your brain is only 2% of your body weight.", "min": 2.0,
+     "visual": "Giant 2% slams in on 'two'; a long bar shows the tiny 2% sliver on 'body'."},
+    {"id": "twist", "say": "But it burns about twenty percent of your energy.", "caption": "But it burns about 20% of your energy.", "accent": true,
+     "visual": "Ring fills to 20% on 'twenty', counter follows; chip '2% -> 20%' pops on 'energy'."},
+    {"id": "why", "say": "Most of it keeps billions of neurons ready to fire.",
+     "visual": "Grid of neurons pops in on 'neurons', orange ripple from the centre on 'fire'."},
+    {"id": "outro", "say": "Follow for more brain facts.",
+     "visual": "Cursor glides in and clicks a Follow pill on 'Follow'; it turns into Following with a check."}
+  ]
+}

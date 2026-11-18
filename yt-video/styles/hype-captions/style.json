@@ -1,0 +1,60 @@
+{
+  "name": "hype-captions",
+  "label": "Hype talking-points (big-caption creator style)",
+  "inspired_by": "high-retention creator Shorts: huge uppercase captions one or two words at a time, a coloured box on the active word, zoom punches",
+  "colors": {
+    "bg": "#000000",
+    "bg2": "#111111",
+    "ink": "#FFFFFF",
+    "muted": "#9CA3AF",
+    "accent": "#FFE600",
+    "accent2": "#22FF66",
+    "accent3": "#FF2D55",
+    "accent4": "#00C2FF",
+    "card": "#151515",
+    "cardInk": "#FFFFFF",
+    "line": "#FFFFFF"
+  },
+  "fonts": {
+    "display": "Anton",
+    "body": "Geist",
+    "mono": "JetBrains Mono"
+  },
+  "weights": {
+    "display": 400,
+    "body": 700
+  },
+  "captions": {
+    "mode": "box",
+    "font": "display",
+    "size": 112,
+    "y": 1240,
+    "weight": 400,
+    "case": "upper",
+    "color": "ink",
+    "active": "accent",
+    "activeText": "bg",
+    "stroke": "bg",
+    "strokeWidth": 12
+  },
+  "transition": "punch",
+  "background": {
+    "kind": "flat",
+    "vignette": 0.5,
+    "grain": 0.06
+  },
+  "motion": {
+    "ease": "cubic",
+    "spring": [
+      22,
+      0.8
+    ]
+  },
+  "music": {
+    "mood": "hype",
+    "bpm": 140
+  },
+  "sfx": {
+    "enabled": true
+  }
+}

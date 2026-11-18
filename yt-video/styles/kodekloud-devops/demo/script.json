@@ -1,0 +1,27 @@
+{
+  "title": "What is a Kubernetes Pod?",
+  "style": "kodekloud-devops",
+  "fps": 30,
+  "voice": {
+    "mode": "design",
+    "instruct": "female, young adult, moderate pitch, american accent",
+    "ref_audio": null,
+    "ref_text": null,
+    "speed": 1.05
+  },
+  "music": {"enabled": false},
+  "sfx": {"enabled": null},
+  "pacing": {"lead_in": 0.12, "gap": 0.25, "tail": 0.8},
+  "scenes": [
+    {"id": "hook", "say": "Kubernetes never runs your container on its own.", "min": 2.2,
+     "visual": "Terminal types 'kubectl run web --image=nginx' from frame 0; the 'web' container card pops in on 'container'."},
+    {"id": "pod", "say": "It wraps it in a pod.",
+     "visual": "A rounded Pod box springs open around the container on 'pod', tag 'Pod' on its corner."},
+    {"id": "share", "say": "Containers in a pod share one IP address and storage.", "caption": "Containers in a pod share one IP address and storage.",
+     "visual": "Pod widens, a 'logger' sidecar slides in on 'containers'; an IP badge pops on 'IP'; a volume appears on 'storage' with packets flowing on a dashed line."},
+    {"id": "node", "say": "The scheduler places each pod on a node.",
+     "visual": "Two node boxes pop in; the pod shrinks and flies into Node 2 on 'places'."},
+    {"id": "heal", "say": "If it crashes, a deployment starts a fresh one.", "sfx_at": [{"word": "fresh", "kind": "pop"}],
+     "visual": "Pod turns red with an X on 'crashes' and falls away; a fresh pod pops into Node 1 with a green check on 'fresh'."}
+  ]
+}
